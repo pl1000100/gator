@@ -16,7 +16,6 @@ type state struct {
 }
 
 func main() {
-
 	cfg, err := config.Read()
 	if err != nil {
 		log.Fatalf("error reading config: %v", err)
@@ -40,6 +39,9 @@ func main() {
 	commands.register("register", handlerRegister)
 	commands.register("reset", handlerReset)
 	commands.register("users", handlerUsers)
+	commands.register("agg", handlerAgg)
+	commands.register("addfeed", handlerAddFeed)
+	commands.register("feeds", handlerFeeds)
 
 	if len(os.Args) < 2 {
 		log.Fatalf("error not enough arguments")
