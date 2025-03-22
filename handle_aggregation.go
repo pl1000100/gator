@@ -34,6 +34,7 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	if err != nil {
 		return &RSSFeed{}, err
 	}
+	req.Header.Set("User-Agent", "gator/1.0")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return &RSSFeed{}, err
@@ -83,7 +84,11 @@ func handlerAddFeed(s *state, cmd command) error {
 		return err
 	}
 	fmt.Println(feed)
-
+	newCmd := command{
+		Name:      "follow",
+		Arguments: cmd.Arguments[1:],
+	}
+	handlerFollow(s, newCmd)
 	return nil
 }
 
