@@ -62,14 +62,10 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.Arguments) != 2 {
 		fmt.Printf("error: wrong number of arguments passed, expected 2, got %d", len(cmd.Arguments))
 		os.Exit(1)
-	}
-	currentUser, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return err
 	}
 	params := database.CreateFeedParams{
 		ID:        uuid.New(),
@@ -77,7 +73,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		UpdatedAt: time.Now(),
 		Name:      cmd.Arguments[0],
 		Url:       cmd.Arguments[1],
-		UserID:    currentUser.ID,
+		UserID:    user.ID,
 	}
 	feed, err := s.db.CreateFeed(context.Background(), params)
 	if err != nil {
@@ -88,7 +84,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		Name:      "follow",
 		Arguments: cmd.Arguments[1:],
 	}
-	handlerFollow(s, newCmd)
+	handlerFollow(s, newCmd, user)
 	return nil
 }
 
