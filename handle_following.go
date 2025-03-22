@@ -50,3 +50,21 @@ func handlerFollowing(s *state, cmd command, user database.User) error {
 	}
 	return nil
 }
+
+func handlerUnfollow(s *state, cmd command, user database.User) error {
+	if len(cmd.Arguments) != 1 {
+		fmt.Printf("error: wrong number of arguments passed, expected 1, got %d", len(cmd.Arguments))
+		os.Exit(1)
+	}
+	params := database.DeleteFeedFollowByUserUrlParams{
+		ID:  user.ID,
+		Url: cmd.Arguments[0],
+	}
+	err := s.db.DeleteFeedFollowByUserUrl(context.Background(), params)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println("Deleted succesfully")
+	return nil
+}
