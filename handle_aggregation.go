@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -52,14 +53,20 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 }
 
 func handlerAgg(s *state, cmd command) error {
-	feedURL := "https://www.wagslane.dev/index.xml"
-
-	feed, err := fetchFeed(context.Background(), feedURL)
+	if len(cmd.Arguments) != 1 {
+		fmt.Printf("error: wrong number of arguments passed, expected 1, got %d", len(cmd.Arguments))
+		os.Exit(1)
+	}
+	timeBetweenRequests, err := time.ParseDuration(cmd.Arguments[0])
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
-	fmt.Println(feed)
-	return nil
+
+	ticker := time.NewTicker(timeBetweenRequests)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
+	}
 }
 
 func handlerAddFeed(s *state, cmd command, user database.User) error {
@@ -100,5 +107,35 @@ func handlerFeeds(s *state, cmd command) error {
 	for _, f := range feeds {
 		fmt.Println(f.Name, f.Url, f.Username)
 	}
+	return nil
+}
+
+func scrapeFeeds(s *state) error {
+	nextFeed, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	params := database.MarkFeedFetchedParams{
+		ID: nextFeed.ID,
+		LastFetchedAt: sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		},
+	}
+	err = s.db.MarkFeedFetched(context.Background(), params)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	feed, err := fetchFeed(context.Background(), nextFeed.Url)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	for _, item := range feed.Channel.Item {
+		fmt.Println(item.Title)
+	}
+
 	return nil
 }
